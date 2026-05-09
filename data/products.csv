@@ -1,0 +1,16 @@
+product_id,product_name,category,price,stock_qty
+P001,Snowflake Enterprise License,Cloud Software,50000,100
+P002,AWS EC2 Reserved Instance,Cloud Infrastructure,12000,500
+P003,Data Pipeline Consulting,Professional Services,80000,50
+P004,Python Development License,Software Tools,3500,200
+P005,Tableau Desktop,Analytics Software,15000,150
+P006,Power BI Premium,Analytics Software,12500,180
+P007,DBT Cloud Business,Cloud Software,8000,120
+P008,Jira Software License,Project Management,4500,300
+P009,Confluence License,Collaboration,3000,300
+P010,GitHub Enterprise,DevOps Tools,6000,200
+P011,DataStage ETL License,ETL Tools,45000,30
+P012,Informatica PowerCenter,ETL Tools,55000,25
+P013,Oracle Database License,Database,75000,40
+P014,SQL Server Enterprise,Database,35000,60
+P015,Linux Support Contract,Infrastructure,5000,400

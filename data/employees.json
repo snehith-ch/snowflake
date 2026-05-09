@@ -1,0 +1,182 @@
+[
+  {
+    "emp_id": "E001",
+    "emp_name": "Arjun Sharma",
+    "department": "Engineering",
+    "salary": 95000,
+    "hire_date": "2019-03-15",
+    "manager_id": "E010",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E002",
+    "emp_name": "Priya Reddy",
+    "department": "Finance",
+    "salary": 80000,
+    "hire_date": "2020-06-01",
+    "manager_id": "E011",
+    "city": "Mumbai"
+  },
+  {
+    "emp_id": "E003",
+    "emp_name": "Rahul Verma",
+    "department": "Engineering",
+    "salary": 90000,
+    "hire_date": "2018-11-20",
+    "manager_id": "E010",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E004",
+    "emp_name": "Sneha Patel",
+    "department": "Human Resources",
+    "salary": 70000,
+    "hire_date": "2021-01-10",
+    "manager_id": "E012",
+    "city": "Bangalore"
+  },
+  {
+    "emp_id": "E005",
+    "emp_name": "Kiran Kumar",
+    "department": "Sales",
+    "salary": 75000,
+    "hire_date": "2020-08-15",
+    "manager_id": "E013",
+    "city": "Delhi"
+  },
+  {
+    "emp_id": "E006",
+    "emp_name": "Ananya Singh",
+    "department": "Data & Analytics",
+    "salary": 88000,
+    "hire_date": "2019-09-05",
+    "manager_id": "E014",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E007",
+    "emp_name": "Vikram Nair",
+    "department": "Engineering",
+    "salary": 92000,
+    "hire_date": "2017-04-22",
+    "manager_id": "E010",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E008",
+    "emp_name": "Divya Menon",
+    "department": "Finance",
+    "salary": 78000,
+    "hire_date": "2021-03-30",
+    "manager_id": "E011",
+    "city": "Mumbai"
+  },
+  {
+    "emp_id": "E009",
+    "emp_name": "Suresh Iyer",
+    "department": "Data & Analytics",
+    "salary": 85000,
+    "hire_date": "2020-11-11",
+    "manager_id": "E014",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E010",
+    "emp_name": "Rajesh Gupta",
+    "department": "Engineering",
+    "salary": 120000,
+    "hire_date": "2015-06-01",
+    "manager_id": null,
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E011",
+    "emp_name": "Meena Krishnan",
+    "department": "Finance",
+    "salary": 115000,
+    "hire_date": "2016-02-14",
+    "manager_id": null,
+    "city": "Mumbai"
+  },
+  {
+    "emp_id": "E012",
+    "emp_name": "Arun Pillai",
+    "department": "Human Resources",
+    "salary": 108000,
+    "hire_date": "2016-07-19",
+    "manager_id": null,
+    "city": "Bangalore"
+  },
+  {
+    "emp_id": "E013",
+    "emp_name": "Lakshmi Rao",
+    "department": "Sales",
+    "salary": 110000,
+    "hire_date": "2015-10-05",
+    "manager_id": null,
+    "city": "Delhi"
+  },
+  {
+    "emp_id": "E014",
+    "emp_name": "Naresh Babu",
+    "department": "Data & Analytics",
+    "salary": 118000,
+    "hire_date": "2016-04-01",
+    "manager_id": null,
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E015",
+    "emp_name": "Pooja Sharma",
+    "department": "Sales",
+    "salary": 72000,
+    "hire_date": "2022-01-17",
+    "manager_id": "E013",
+    "city": "Delhi"
+  },
+  {
+    "emp_id": "E016",
+    "emp_name": "Manoj Tiwari",
+    "department": "Engineering",
+    "salary": 88000,
+    "hire_date": "2020-05-25",
+    "manager_id": "E010",
+    "city": "Hyderabad"
+  },
+  {
+    "emp_id": "E017",
+    "emp_name": "Kavitha Nair",
+    "department": "Finance",
+    "salary": 76000,
+    "hire_date": "2021-08-08",
+    "manager_id": "E011",
+    "city": "Chennai"
+  },
+  {
+    "emp_id": "E018",
+    "emp_name": "Ramesh Yadav",
+    "department": "Human Resources",
+    "salary": 68000,
+    "hire_date": "2022-04-12",
+    "manager_id": "E012",
+    "city": "Bangalore"
+  },
+  {
+    "emp_id": "E019",
+    "emp_name": "Sunita Joshi",
+    "department": "Sales",
+    "salary": 74000,
+    "hire_date": "2021-12-01",
+    "manager_id": "E013",
+    "city": "Mumbai"
+  },
+  {
+    "emp_id": "E020",
+    "emp_name": "Abhishek Mishra",
+    "department": "Data & Analytics",
+    "salary": 82000,
+    "hire_date": "2020-02-14",
+    "manager_id": "E014",
+    "city": "Hyderabad"
+  }
+]

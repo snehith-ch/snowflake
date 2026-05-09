@@ -1,0 +1,6 @@
+dept_id,dept_name,location,budget
+D001,Engineering,Hyderabad,5000000
+D002,Finance,Mumbai,3000000
+D003,Human Resources,Bangalore,2000000
+D004,Sales,Delhi,4000000
+D005,Data & Analytics,Hyderabad,2500000

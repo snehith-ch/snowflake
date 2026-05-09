@@ -1,0 +1,11 @@
+customer_id,customer_name,city,email,join_date
+C001,Infosys Technologies,Bangalore,procurement@infosys.com,2020-01-15
+C002,Tata Consultancy Services,Mumbai,vendor@tcs.com,2019-08-22
+C003,HDFC Bank Ltd,Mumbai,finance@hdfc.com,2021-03-10
+C004,Wipro Limited,Hyderabad,purchase@wipro.com,2020-11-05
+C005,HCL Technologies,Noida,supply@hcl.com,2019-06-30
+C006,Tech Mahindra,Pune,accounts@techmahindra.com,2021-07-18
+C007,Larsen & Toubro,Mumbai,contracts@lnt.com,2020-04-25
+C008,Reliance Industries,Mumbai,b2b@reliance.com,2022-01-08
+C009,State Bank of India,Delhi,procurement@sbi.com,2019-12-01
+C010,Mahindra & Mahindra,Pune,vendor@mahindra.com,2021-09-14

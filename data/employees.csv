@@ -1,0 +1,21 @@
+emp_id,emp_name,department,salary,hire_date,manager_id,city
+E001,Arjun Sharma,Engineering,95000,2019-03-15,E010,Hyderabad
+E002,Priya Reddy,Finance,80000,2020-06-01,E011,Mumbai
+E003,Rahul Verma,Engineering,90000,2018-11-20,E010,Hyderabad
+E004,Sneha Patel,Human Resources,70000,2021-01-10,E012,Bangalore
+E005,Kiran Kumar,Sales,75000,2020-08-15,E013,Delhi
+E006,Ananya Singh,Data & Analytics,88000,2019-09-05,E014,Hyderabad
+E007,Vikram Nair,Engineering,92000,2017-04-22,E010,Hyderabad
+E008,Divya Menon,Finance,78000,2021-03-30,E011,Mumbai
+E009,Suresh Iyer,Data & Analytics,85000,2020-11-11,E014,Hyderabad
+E010,Rajesh Gupta,Engineering,120000,2015-06-01,,Hyderabad
+E011,Meena Krishnan,Finance,115000,2016-02-14,,Mumbai
+E012,Arun Pillai,Human Resources,108000,2016-07-19,,Bangalore
+E013,Lakshmi Rao,Sales,110000,2015-10-05,,Delhi
+E014,Naresh Babu,Data & Analytics,118000,2016-04-01,,Hyderabad
+E015,Pooja Sharma,Sales,72000,2022-01-17,E013,Delhi
+E016,Manoj Tiwari,Engineering,88000,2020-05-25,E010,Hyderabad
+E017,Kavitha Nair,Finance,76000,2021-08-08,E011,Chennai
+E018,Ramesh Yadav,Human Resources,68000,2022-04-12,E012,Bangalore
+E019,Sunita Joshi,Sales,74000,2021-12-01,E013,Mumbai
+E020,Abhishek Mishra,Data & Analytics,82000,2020-02-14,E014,Hyderabad

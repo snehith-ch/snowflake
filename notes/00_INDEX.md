@@ -16,10 +16,10 @@ Complete index of all 35 lecture notes from the Snowflake training series.
 | [6](#lecture-6) | [lecture_06_semistructured_json.md](lecture_06_semistructured_json.md) | Semi-structured data — JSON deep dive and COPY INTO |
 | [7](#lecture-7) | [lecture_07_variant_loading.md](lecture_07_variant_loading.md) | VARIANT data type, loading multiple JSON files, LATERAL FLATTEN |
 | [8](#lecture-8) | [lecture_08_xml_processing.md](lecture_08_xml_processing.md) | XML file processing, XMLGET function, LATERAL FLATTEN |
-| 9 | *(pending)* | Time Travel — AT, BEFORE, OFFSET, STATEMENT |
-| 10 | *(pending)* | Fail-Safe and data recovery |
-| 11 | *(pending)* | Data Sharing — Shares, Data Exchange |
-| 12 | *(pending)* | Table types — Permanent, Transient, Temporary, External |
+| [9](#lecture-9) | [lecture_09_snowsql_cli.md](lecture_09_snowsql_cli.md) | SnowSQL CLI, PUT command, internal and external stages |
+| [10](#lecture-10) | [lecture_10_external_stages_aws.md](lecture_10_external_stages_aws.md) | External stages — AWS S3 setup and storage integration |
+| [11](#lecture-11) | [lecture_11_storage_integration.md](lecture_11_storage_integration.md) | Storage integration — IAM roles, DESCRIBE STAGE, ALTER |
+| [12](#lecture-12) | [lecture_12_table_types_timetravel.md](lecture_12_table_types_timetravel.md) | Table types, Time Travel, Fail Safe, INFER_SCHEMA |
 | [13](#lecture-13) | [lecture_13_copy_history_external.md](lecture_13_copy_history_external.md) | Table types recap, external stages, COPY history, Snowpipe intro |
 | [14](#lecture-14) | [lecture_14_snowpipe.md](lecture_14_snowpipe.md) | Snowpipe — continuous data ingestion |
 | [15](#lecture-15) | [lecture_15_copy_options.md](lecture_15_copy_options.md) | COPY command options and error handling |
@@ -27,11 +27,11 @@ Complete index of all 35 lecture notes from the Snowflake training series.
 | [17](#lecture-17) | [lecture_17_tasks_udfs.md](lecture_17_tasks_udfs.md) | Tasks, scheduling, and User-Defined Functions |
 | [18](#lecture-18) | [lecture_18_streams_merge_advanced.md](lecture_18_streams_merge_advanced.md) | Streams and MERGE — advanced topics, warehouse auto-resume |
 | [19](#lecture-19) | [lecture_19_stored_procedures.md](lecture_19_stored_procedures.md) | Stored procedures — introduction and SQL scripting |
-| 20 | *(pending)* | Stored procedures — JavaScript and Python procedures |
-| 21 | *(pending)* | Dynamic Data Masking and Row Access Policies |
-| 22 | *(pending)* | DBT Introduction — concepts and DBT vs SQL |
-| 23 | *(pending)* | DBT Cloud setup and first models |
-| 24 | *(pending)* | DBT models — views, tables, CTEs, ref() function |
+| [20](#lecture-20) | [lecture_20_procedures_advanced.md](lecture_20_procedures_advanced.md) | Stored procedures — JavaScript API and Python procedures |
+| [21](#lecture-21) | [lecture_21_masking_policies.md](lecture_21_masking_policies.md) | Dynamic Data Masking — masking policies, column-level security |
+| [22](#lecture-22) | [lecture_22_masking_timetravel.md](lecture_22_masking_timetravel.md) | Advanced masking, Time Travel deep dive |
+| [23](#lecture-23) | [lecture_23_informatica_dbt_intro.md](lecture_23_informatica_dbt_intro.md) | Informatica Cloud overview and DBT introduction |
+| [24](#lecture-24) | [lecture_24_dbt_cloud.md](lecture_24_dbt_cloud.md) | DBT Cloud — Snowflake connection, first models, DAG |
 | [25](#lecture-25) | [lecture_25_dbt_core.md](lecture_25_dbt_core.md) | DBT Core — Anaconda, Conda environments, profiles.yml, models |
 | [26](#lecture-26) | [lecture_26_dbt_seeds_snapshots.md](lecture_26_dbt_seeds_snapshots.md) | DBT Seeds, Snapshots (SCD Type 2), pre/post hooks intro |
 | [27](#lecture-27) | [lecture_27_dbt_github.md](lecture_27_dbt_github.md) | DBT Cloud — GitHub integration, deploy keys, snapshots, hooks |
@@ -81,20 +81,20 @@ Loading multiple JSON files with pattern matching, `LATERAL FLATTEN` to unnest a
 Loading XML data into VARIANT, `XMLGET(col, 'tag')` function, extracting attributes with `@attribute`, combining XMLGET with LATERAL FLATTEN for XML arrays.
 
 ### Lecture 9
-**Time Travel — AT, BEFORE, OFFSET, STATEMENT** *(notes pending)*
-Querying historical data with `AT (TIMESTAMP => ...)`, `AT (OFFSET => ...)`, `AT (STATEMENT => ...)`, `BEFORE (STATEMENT => ...)`. Retention period configuration. Restoring dropped tables with `UNDROP`.
+**SnowSQL CLI, PUT Command, and Stages**
+Installing and connecting with SnowSQL CLI, executing SQL from the command line, uploading local files with `PUT file://path @stage`, listing staged files with `LIST @stage`, removing files with `REMOVE @stage`. Internal stage types: user stage (`@~`), table stage (`@%table`), named stage (`@stage_name`).
 
 ### Lecture 10
-**Fail-Safe and Data Recovery** *(notes pending)*
-Fail-Safe period (7 days, non-configurable), difference between Time Travel and Fail-Safe, `TABLE_STORAGE_METRICS`, storage cost analysis.
+**External Stages — AWS S3 Setup and Storage Integration**
+Creating external stages pointing to S3 buckets, configuring URL and credentials, differences between credentials-based and IAM role-based access, introduction to Storage Integration objects for secure, credential-free S3 access.
 
 ### Lecture 11
-**Data Sharing — Shares and Data Exchange** *(notes pending)*
-Creating secure shares, adding objects to shares, granting access to consumer accounts, Snowflake Data Marketplace, data exchange setup.
+**Storage Integration — IAM Roles, DESCRIBE STAGE, and ALTER**
+Deep dive into Storage Integration: creating an IAM role with placeholder trust, running `DESCRIBE INTEGRATION` to get Snowflake's IAM User ARN and External ID, updating the AWS trust relationship, creating the external stage. `DESCRIBE STAGE` to verify stage configuration. `ALTER STORAGE INTEGRATION` to add or modify allowed locations.
 
 ### Lecture 12
-**Table Types** *(notes pending)*
-Permanent, Transient, Temporary, and External tables. Differences in Time Travel retention, Fail-Safe, and storage costs. When to use each type.
+**Table Types, Time Travel, Fail Safe, and INFER_SCHEMA**
+Permanent, Transient, Temporary, and External tables — differences in Time Travel retention and Fail-Safe. `AT`/`BEFORE` clauses for historical queries. `UNDROP TABLE` for recovery. `INFER_SCHEMA` to auto-detect column names and types from Parquet/JSON files. `SELECT * EXCLUDE column` syntax. `TABLE_STORAGE_METRICS` view for storage cost analysis.
 
 ### Lecture 13
 **Table Types Recap, External Stages, Copy History, and Snowpipe Introduction**
@@ -125,24 +125,24 @@ MERGE statement to apply stream changes to target tables (INSERT/UPDATE/DELETE i
 Creating stored procedures in SQL Scripting, `DECLARE`, `BEGIN/END` blocks, `FOR` loops, `EXECUTE IMMEDIATE`, calling procedures with `CALL`.
 
 ### Lecture 20
-**Stored Procedures — JavaScript and Python** *(notes pending)*
-JavaScript stored procedures with Snowflake JavaScript API, Python stored procedures, `snowflake.execute()`, returning results, exception handling.
+**Stored Procedures — JavaScript API and Python**
+JavaScript stored procedures using the Snowflake JavaScript API (`snowflake.execute()`, `snowflake.createStatement()`), returning results from procedures, Python stored procedures with `snowflake.execute_string()`, exception handling with try/catch blocks, calling procedures with `CALL`.
 
 ### Lecture 21
-**Dynamic Data Masking and Row Access Policies** *(notes pending)*
-Creating masking policies (full mask, partial mask, SHA256 hash), applying to columns, row access policies for role-based row filtering.
+**Dynamic Data Masking — Masking Policies and Column-Level Security**
+Creating masking policies: full mask (`'XXXX'`), partial mask (`CONCAT('***-', RIGHT(col, 4))`), SHA256 hash mask. Applying policies to columns with `ALTER TABLE ... ALTER COLUMN ... SET MASKING POLICY`. Role-based conditional logic inside policy body. `SHOW MASKING POLICIES` and `DESCRIBE MASKING POLICY`.
 
 ### Lecture 22
-**DBT Introduction — Concepts and Architecture** *(notes pending)*
-What is DBT, ELT vs ETL philosophy, DBT project structure, models vs seeds vs snapshots vs macros vs tests, comparison with traditional SQL tools.
+**Advanced Masking and Time Travel Deep Dive**
+Advanced masking policy scenarios, row access policies for role-based row filtering. Time Travel: `AT (TIMESTAMP => ...)`, `AT (OFFSET => -N)`, `AT (STATEMENT => 'query_id')`, `BEFORE (STATEMENT => ...)`. Restoring dropped objects with `UNDROP`. Configuring `DATA_RETENTION_TIME_IN_DAYS`.
 
 ### Lecture 23
-**DBT Cloud Setup and First Models** *(notes pending)*
-Creating a DBT Cloud account, connecting to Snowflake, creating first models, understanding the DBT DAG, running models and seeing results in Snowflake.
+**Informatica Cloud Overview and DBT Introduction**
+Introduction to Informatica Cloud as an ETL/ELT tool, comparison with DBT philosophy. What is DBT (Data Build Tool), ELT approach — transform data already in Snowflake. DBT project structure: models, seeds, snapshots, macros, tests. DBT Cloud vs DBT Core.
 
 ### Lecture 24
-**DBT Models — Views, Tables, CTEs, and ref()** *(notes pending)*
-Model materializations in detail, using CTEs within models, `{{ ref() }}` function for cross-model dependencies, model dependency graph, dbt_project.yml model configuration.
+**DBT Cloud — Snowflake Connection, First Models, and DAG**
+Creating a DBT Cloud account, connecting to Snowflake (account, role, warehouse, database, schema), creating first SQL models, understanding materializations (view vs table), the `{{ ref() }}` function for model dependencies, the DBT DAG visualization, running and testing models in DBT Cloud IDE.
 
 ### Lecture 25
 **DBT Core — Anaconda, Conda Environments, and Profiles**

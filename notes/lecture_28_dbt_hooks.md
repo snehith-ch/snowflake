@@ -202,7 +202,28 @@ CREATE OR REPLACE TRANSIENT TABLE "DEV_DB"."DEV_SCHEMA"."CUSTOMER" AS (
 );
 ```
 
-> **Note:** By default, DBT creates `TRANSIENT TABLE` in Snowflake (not a permanent table). This is because transient tables have no fail-safe and lower storage costs.
+### Why DBT Creates TRANSIENT Tables (Not Permanent Tables)
+
+When you set `materialized='table'`, DBT creates a **transient table** in Snowflake — not a permanent table. Here is why:
+
+| Feature | Permanent Table | Transient Table |
+|---|---|---|
+| Time Travel | Up to 90 days | 0 or 1 day maximum |
+| Fail-Safe | 7 days (additional cost) | None |
+| Storage Cost | Higher (fail-safe adds cost) | Lower |
+| DBT default | No | Yes |
+
+DBT models are rebuilt on every `dbt run`, so there is no need for long-term Time Travel or Fail-Safe on models — the model can always be re-created. Using transient tables reduces storage costs significantly.
+
+**To force a permanent table (if needed):**
+```yaml
+# dbt_project.yml
+models:
+  my_project:
+    my_model_name:
+      +snowflake_options:
+        transient: false
+```
 
 ---
 

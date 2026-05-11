@@ -91,12 +91,38 @@ SELECT * FROM STORE_SALES WHERE ss_sold_date_sk = 2451119;
 
 ## 4. Clustering Keys
 
+### Step 0: Check Cardinality BEFORE Creating a Clustering Key
+
+Before clustering, check how many distinct values the column has. Low cardinality = better clustering key.
+
+```sql
+-- Check distinct values in a column before clustering
+SELECT COUNT(DISTINCT i_category) FROM ITEM;   -- Result: 7 distinct categories → GOOD
+
+SELECT COUNT(DISTINCT i_item_sk) FROM ITEM;    -- Result: 402,000 distinct IDs → BAD
+```
+
+**Why cardinality matters:**
+
+```
+Low cardinality (4-20 distinct values):
+  Partitions with overlapping ranges are few.
+  Filter WHERE i_category = 'Books' → scans only relevant partitions.
+
+High cardinality (400,000+ distinct values):
+  Nearly every partition has a different value.
+  Clustering is ineffective — still scans most partitions.
+  Snowflake itself warns: "HIGH CARDINALITY — clustering may not improve performance"
+```
+
+> **Rule of thumb:** If a column has fewer than ~100 distinct values (like dates, categories, regions), it is a good clustering key. If it has millions of distinct values (like a row ID or transaction ID), do not cluster on it.
+
 ### When to Create a Clustering Key
 - The table has **large volume** of data (hundreds of millions+ rows).
 - Queries frequently filter on a specific column.
-- The column has **low to medium cardinality** (date columns, category columns).
+- The column has **low to medium cardinality** (date columns, category columns — not unique IDs).
 
-> **Warning:** Do NOT cluster on columns with very high cardinality (unique IDs). High cardinality reduces clustering quality.
+> **Warning:** Do NOT cluster on columns with very high cardinality (unique IDs). Snowflake itself warns you when you try: `"HIGH CARDINALITY which might result in reducing the quality of clustering"`.
 
 ### Checking Clustering Information
 ```sql
@@ -244,9 +270,18 @@ SHOW WAREHOUSES;
 -- Check: ENABLE_QUERY_ACCELERATION = true, QUERY_ACCELERATION_MAX_SCALE_FACTOR = 26
 ```
 
-### Query Eligibility Check
+### Finding Queries Eligible for QAS
 ```sql
--- Check which recent queries were eligible for QAS
+-- View that shows queries eligible for acceleration in the past 14 days
+SELECT *
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_ACCELERATION_ELIGIBLE
+ORDER BY ELIGIBLE_QUERY_COUNT DESC;
+```
+
+This view shows which queries are long-running AND eligible. Use it to find candidates for enabling QAS on a warehouse.
+
+```sql
+-- Check which recent queries were eligible for QAS (real-time)
 SELECT * FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY())
 WHERE QUERY_ACCELERATION_PARTITIONS_SCANNED > 0
 ORDER BY START_TIME DESC;

@@ -117,15 +117,165 @@ conn.close()
 
 ### Fetch Methods
 
-| Method | Description |
-|---|---|
-| `cursor.fetchone()` | Fetch exactly one row |
-| `cursor.fetchmany(n)` | Fetch next `n` rows |
-| `cursor.fetchall()` | Fetch all remaining rows |
+| Method | Returns | Best Use |
+|---|---|---|
+| `cursor.fetchone()` | One row as a tuple (or `None`) | When you expect exactly one result (COUNT, MAX) |
+| `cursor.fetchmany(n)` | List of next `n` rows | Streaming large results in batches |
+| `cursor.fetchall()` | List of all remaining rows | Small to medium result sets |
+
+```python
+# fetchone example — get a single count
+cursor.execute("SELECT COUNT(*) FROM T_CUSTOMER")
+count_row = cursor.fetchone()
+print(f"Total rows: {count_row[0]}")  # count_row is a tuple, e.g. (150000,)
+
+# fetchmany example — process in batches of 1000
+cursor.execute("SELECT * FROM STORE_SALES")
+while True:
+    batch = cursor.fetchmany(1000)
+    if not batch:
+        break
+    for row in batch:
+        print(row)
+
+# fetchall example — all rows at once
+cursor.execute("SELECT * FROM T_CUSTOMER LIMIT 100")
+all_rows = cursor.fetchall()
+for row in all_rows:
+    print(row)
+```
 
 ---
 
-## 5. Executing DDL and DML Statements
+## 5. Parameterized Queries (Preventing SQL Injection)
+
+Never build SQL by string concatenation with user input. Use parameterized queries with `%s` placeholders instead.
+
+```python
+import snowflake.connector
+
+conn = snowflake.connector.connect(
+    user='krishna', password='mypassword',
+    account='abc123.us-east-1',
+    warehouse='COMPUTE_WH', database='DEV_DB', schema='DEV_SCHEMA'
+)
+cursor = conn.cursor()
+
+# BAD - SQL injection risk
+user_input = "'; DROP TABLE T_CUSTOMER; --"
+cursor.execute(f"SELECT * FROM T_CUSTOMER WHERE c_name = '{user_input}'")  # NEVER do this
+
+# GOOD - parameterized query with %s
+cursor.execute(
+    "SELECT * FROM T_CUSTOMER WHERE c_name = %s AND c_nationkey = %s",
+    ('Customer#1', 5)    # Parameters passed as a tuple
+)
+rows = cursor.fetchall()
+
+cursor.close()
+conn.close()
+```
+
+> **Why `%s`?** Snowflake uses `%s` (not `?` or `:param`) as the placeholder. The connector handles escaping automatically, preventing SQL injection.
+
+---
+
+## 5a. Fetching Results as a Pandas DataFrame
+
+If you have pandas installed, you can load query results directly into a DataFrame:
+
+```python
+import snowflake.connector
+import pandas as pd
+
+conn = snowflake.connector.connect(
+    user='krishna', password='mypassword',
+    account='abc123.us-east-1',
+    warehouse='COMPUTE_WH', database='DEV_DB', schema='DEV_SCHEMA'
+)
+cursor = conn.cursor()
+
+cursor.execute("SELECT * FROM T_CUSTOMER LIMIT 1000")
+
+# Load directly into DataFrame
+df = cursor.fetch_pandas_all()
+
+print(df.head())
+print(df.shape)  # (1000, n_columns)
+
+cursor.close()
+conn.close()
+```
+
+The column names in the DataFrame match the Snowflake column names exactly.
+
+---
+
+## 5b. Context Managers (Cleaner Resource Handling)
+
+Instead of manually calling `cursor.close()` and `conn.close()`, use Python's `with` statement:
+
+```python
+import snowflake.connector
+
+# The connection is automatically closed when the with block exits
+with snowflake.connector.connect(
+    user='krishna', password='mypassword',
+    account='abc123.us-east-1',
+    warehouse='COMPUTE_WH', database='DEV_DB', schema='DEV_SCHEMA'
+) as conn:
+
+    # The cursor is automatically closed when this block exits
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM T_CUSTOMER")
+        result = cursor.fetchone()
+        print(f"Row count: {result[0]}")
+
+# No need to call cursor.close() or conn.close() — handled automatically
+```
+
+This is the preferred pattern in production code because it guarantees cleanup even if an exception occurs.
+
+---
+
+## 5c. Error Handling
+
+```python
+import snowflake.connector
+from snowflake.connector import errors
+
+conn = None
+cursor = None
+try:
+    conn = snowflake.connector.connect(
+        user='krishna', password='wrong_password',    # intentional error
+        account='abc123.us-east-1',
+        warehouse='COMPUTE_WH', database='DEV_DB', schema='DEV_SCHEMA'
+    )
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM NONEXISTENT_TABLE")
+    rows = cursor.fetchall()
+
+except errors.DatabaseError as e:
+    # Catches Snowflake-specific errors (auth failure, SQL errors, etc.)
+    print(f"Snowflake error: {e.msg}")
+    print(f"Error code: {e.errno}")
+
+except Exception as e:
+    # Catches other Python exceptions
+    print(f"Unexpected error: {e}")
+
+finally:
+    # Always runs — cleanup regardless of success or failure
+    if cursor:
+        cursor.close()
+    if conn:
+        conn.close()
+```
+
+---
+
+## 6. Executing DDL and DML Statements
 
 ```python
 import snowflake.connector
@@ -201,7 +351,26 @@ SHOW ROLES;
 
 ---
 
-## 7. Introduction to Snowpark
+## 7. snowflake-connector-python vs snowflake-snowpark-python
+
+These are two different packages with different purposes:
+
+| Feature | `snowflake-connector-python` | `snowflake-snowpark-python` |
+|---|---|---|
+| Install | `pip install snowflake-connector-python` | `pip install snowflake-snowpark-python` |
+| Connection object | `snowflake.connector.connect()` | `Session.builder.configs({}).create()` |
+| Query style | Send SQL strings with `cursor.execute()` | DataFrame API (like pandas) |
+| Computation location | On your local machine | Inside Snowflake's engine |
+| Result fetch | `cursor.fetchall()`, `fetchone()` | `df.collect()`, `df.to_pandas()` |
+| Best for | ETL scripts, admin tasks, running SQL | ML pipelines, large-scale transforms |
+
+**Simple rule:**
+- Use `snowflake-connector-python` when you want to **send SQL commands** to Snowflake from Python.
+- Use `snowflake-snowpark-python` when you want to **write Python code that runs inside Snowflake** (the computation stays in the cloud).
+
+---
+
+## 9. Introduction to Snowpark
 
 Snowpark is a developer framework that lets you write Python, Java, or Scala code that runs **inside Snowflake** — meaning the computation happens in Snowflake's engine, not on your local machine.
 

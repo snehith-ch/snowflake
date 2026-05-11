@@ -1,0 +1,174 @@
+Run selected = CTRL + Enter
+Run all = CTRL + Shift + Enter
+Format SQL = CTRL + Alt + O
+Find in file
+CTRL
++
+F
+Replace in file
+CTRL
++
+H
+Split pane horizontally
+CTRL
++
+\
+Split pane vertically
+CTRL
++
+Shift
++
+\
+Close focused tab
+CTRL
++
+Q
+Close all tabs
+CTRL
++
+Shift
++
+Q
+Copy selected file
+CTRL
++
+C
+Cut selected file
+CTRL
++
+X
+Paste file in selected location
+CTRL
++
+V
+Open query results pane
+CTRL
++
+ALT
++
+↑
+Close query results pane
+CTRL
++
+ALT
++
+↓
+Open query history pane
+CTRL
++
+Shift
++
+H
+Toggle line comment
+CTRL
++
+/
+Open inline Copilot
+CTRL
++
+I
+Toggle Copilot panel
+CTRL
++
+SHIFT
++
+I
+Open file search
+CTRL
++
+P
+Show keyboard shortcuts
+CTRL
++
+ALT
++
+K
+
+
+
+
+
+Run this cell only
+CTRL
++
+Enter
+Run cell and advance
+Shift
++
+Enter
+Run all cells
+CTRL
++
+Shift
++
+Enter
+Stop all cells
+I
++
+I
+Enter selected cell
+Enter
+Exit selected cell
+Escape
+Add cell above
+A
+Add cell below
+B
+Move cell up
+CTRL
++
+Shift
++
+↑
+Move cell down
+CTRL
++
+Shift
++
+↓
+Duplicate cell
+CTRL
++
+D
+Delete selected cell
+D
++
+D
+Delete selected cell
+Backspace
+Delete selected cell (skip prompt)
+Shift+D
++
+Shift+D
+Delete selected cell (skip prompt)
+Shift
++
+Backspace
+Convert to Markdown cell
+M
+Convert to Python/SQL cell
+Y
+Format query
+Ctrl
++
+Shift
++
+O
+Comment out code
+Ctrl
++
+/
+Go to next cell
+J
+Go to previous cell
+K
+Undo
+CTRL
++
+Z
+Redo
+CTRL
++
+Shift
++
+Z

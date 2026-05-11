@@ -215,41 +215,82 @@ ORDER BY created_date;
 
 ---
 
-## 8. Secure Views and Materialized Views (Mentioned in Lecture 27/28)
+## 8. Secure Views and Materialized Views
 
-### Secure View
-Hides the underlying SELECT definition from non-owner roles.
+### Normal View — Definition Is Visible to Others
 ```sql
-CREATE SECURE VIEW v_customer AS
-SELECT customer_id, customer_name
-FROM t_customer
-WHERE region = 'NORTH';
+CREATE OR REPLACE VIEW V_CUSTOMER AS
+SELECT customer_id, c_name, c_nationkey
+FROM T_CUSTOMER
+WHERE c_nationkey < 10;
+```
+Any user with access can run `SHOW VIEWS` and see the full `text` column (the CREATE statement). This can expose business logic and table structure.
+
+### Secure View — Hides the Definition
+```sql
+CREATE OR REPLACE SECURE VIEW V_CUSTOMER_SECURE AS
+SELECT customer_id, c_name, c_nationkey
+FROM T_CUSTOMER
+WHERE c_nationkey < 10;
+```
+Non-owner roles cannot see the underlying SQL in `SHOW VIEWS`. The `is_secure` column shows `TRUE`.
+
+```sql
+SHOW VIEWS;
+-- Check the column: IS_SECURE = true for secure views
 ```
 
-### Materialized View
-Pre-computes and stores query results. Auto-refreshes when underlying data changes.
+**Key point:** Secure views can also join multiple tables — no restriction there.
+
+### Materialized View — Pre-Computes and Stores Results
 ```sql
-CREATE MATERIALIZED VIEW mv_country_info AS
+CREATE MATERIALIZED VIEW MV_COUNTRY_WISE_INFO AS
 SELECT
-    nation_key,
-    SUM(account_balance) AS total_balance
-FROM t_customer
-GROUP BY nation_key;
+    c_nationkey,
+    SUM(c_acctbal) AS total_balance
+FROM T_CUSTOMER
+GROUP BY c_nationkey;
 ```
 
-| Type | Storage Cost | JOIN Support | Auto-Refresh |
-|---|---|---|---|
-| View | None | Yes | N/A |
-| Secure View | None | Yes | N/A |
-| Materialized View | Yes | Single table only | Yes (automatic) |
-| Secure Materialized View | Yes | Single table only | Yes |
-| Dynamic Table | Yes | Multiple tables | Yes (configurable lag) |
+**Limitations of materialized views:**
+- Can only reference a **single table** — no JOINs allowed
+- If you try to join two tables you get: `Invalid materialized view definition — more than one table reference`
+- Has **storage cost** (stores the pre-computed results)
+- Has **refresh cost** (charged every time it re-reads the base table)
+- Auto-refreshes when underlying data changes
+
+### Secure Materialized View
+```sql
+CREATE SECURE MATERIALIZED VIEW SMV_COUNTRY AS
+SELECT
+    c_nationkey,
+    SUM(c_acctbal) AS total_balance
+FROM T_CUSTOMER
+GROUP BY c_nationkey;
+```
+In `SHOW VIEWS`: both `IS_SECURE = TRUE` and `IS_MATERIALIZED = TRUE`.
+
+### Complete View Type Comparison
+
+| Type | Storage Cost | JOIN Support | Auto-Refresh | Definition Hidden |
+|---|---|---|---|---|
+| View | None | Yes (multiple tables) | N/A | No |
+| Secure View | None | Yes (multiple tables) | N/A | Yes (non-owners) |
+| Materialized View | Yes | Single table ONLY | Yes (automatic) | No |
+| Secure Materialized View | Yes | Single table ONLY | Yes (automatic) | Yes (non-owners) |
+| Dynamic Table | Yes | Yes (multiple tables) | Yes (configurable lag) | No |
+
+> **When to use materialized view:** Aggregate queries (SUM, AVG, COUNT) on a single large table that is infrequently updated. Snowflake maintains the result automatically.
+>
+> **When NOT to use materialized view:** When you need to JOIN two tables. Use a Dynamic Table instead.
 
 ---
 
-## 9. Dynamic Tables (Alternative to Materialized Views for Multi-Table Joins)
+## 9. Dynamic Tables — Snowflake's Alternative to Materialized Views
 
-When you need auto-refresh from multiple joined tables, use a **Dynamic Table**:
+Dynamic Tables solve the single-table limitation of materialized views. They can join multiple tables and refresh on a schedule.
+
+### Creating a Dynamic Table
 ```sql
 CREATE OR REPLACE DYNAMIC TABLE T_REFRESH_DATA
     TARGET_LAG = '2 minutes'
@@ -259,22 +300,46 @@ AS
 SELECT
     c.c_custkey,
     c.c_name,
+    n.n_nationkey,
     n.n_name AS nation_name
 FROM T_CUSTOMER c
 JOIN T_NATION n ON c.c_nationkey = n.n_nationkey;
 ```
 
-To manually refresh:
+**Key parameters:**
+- `TARGET_LAG = '2 minutes'` — Snowflake refreshes the table at most every 2 minutes. Set this based on how stale your data can be.
+- `WAREHOUSE = COMPUTE_WH` — The warehouse used to perform the refresh computation.
+
+### Manual Refresh
 ```sql
 ALTER DYNAMIC TABLE T_REFRESH_DATA REFRESH;
 ```
 
-Check refresh history:
+### Check Refresh History
 ```sql
 SELECT * FROM TABLE(INFORMATION_SCHEMA.DYNAMIC_TABLE_REFRESH_HISTORY(
     NAME => 'T_REFRESH_DATA'
 ));
 ```
+
+The output shows: `REFRESH_ACTION` (FULL/INCREMENTAL/NO_DATA), `ROWS_INSERTED`, `ROWS_DELETED`, and whether it was a manual or scheduled refresh.
+
+### How the Refresh History Looks
+
+| REFRESH_TRIGGER | REFRESH_ACTION | ROWS_INSERTED | ROWS_DELETED |
+|---|---|---|---|
+| SCHEDULED | FULL | 25 | 0 |
+| SCHEDULED | NO_DATA | 0 | 0 |
+| MANUAL | INCREMENTAL | 0 | 1 |
+
+### Dynamic Table vs Materialized View
+
+| Feature | Materialized View | Dynamic Table |
+|---|---|---|
+| Multi-table JOINs | No | Yes |
+| Refresh control | Automatic only | Configurable lag + manual |
+| Recommended by Snowflake | Legacy | Yes (preferred) |
+| Use case | Simple aggregates | Any pipeline transformation |
 
 ---
 

@@ -110,9 +110,64 @@ SELECT * FROM {{ ref('customer') }}
 | Parameter | Description |
 |---|---|
 | `target_schema` | Schema where the snapshot table is created |
-| `strategy` | `check` (compare column values) or `timestamp` (use updated_at column) |
+| `strategy` | `check` or `timestamp` (see comparison below) |
 | `unique_key` | Column that uniquely identifies each row |
-| `check_cols` | Columns to check for changes |
+| `check_cols` | Columns to check for changes (used with `check` strategy) |
+| `updated_at` | Timestamp column to compare (used with `timestamp` strategy) |
+
+### All 4 Snapshot Strategy Options
+
+DBT supports two strategies, each with two variations for `check_cols`:
+
+| Strategy | `check_cols` | When to Use |
+|---|---|---|
+| `check` | `['col1', 'col2']` | Watch specific columns for any change |
+| `check` | `'all'` | Watch ALL columns — any column change triggers a new version |
+| `timestamp` | N/A (uses `updated_at`) | Source data has a reliable `updated_at` timestamp column |
+| `timestamp` | N/A | Better performance than `check` on large tables |
+
+#### Strategy: `check` — Watch Specific Columns
+```sql
+{% snapshot change_track %}
+{{
+    config(
+        target_schema = 'dbt_schema',
+        strategy       = 'check',
+        unique_key     = 'ticket_id',
+        check_cols     = ['ticket_status']   -- only track changes to this column
+    )
+}}
+SELECT * FROM {{ ref('customer') }}
+{% endsnapshot %}
+```
+
+#### Strategy: `check` — Watch All Columns
+```sql
+{{
+    config(
+        target_schema = 'dbt_schema',
+        strategy       = 'check',
+        unique_key     = 'ticket_id',
+        check_cols     = 'all'               -- any column change triggers snapshot
+    )
+}}
+```
+
+#### Strategy: `timestamp` — Use an Updated_At Column
+```sql
+{{
+    config(
+        target_schema = 'dbt_schema',
+        strategy       = 'timestamp',
+        unique_key     = 'ticket_id',
+        updated_at     = 'updated_at'        -- DBT compares this timestamp
+    )
+}}
+```
+
+**When to use `timestamp` vs `check`:**
+- Use `timestamp` when your source table has a reliable `updated_at` or `modified_date` column. DBT only processes rows where `updated_at` has changed — faster on large tables.
+- Use `check` when your source has no timestamp but you need to detect row changes. DBT compares column values directly — slightly slower but works without a timestamp column.
 
 ### Running a Snapshot
 ```bash
@@ -168,12 +223,19 @@ Hooks are SQL statements executed **before** (`pre-hook`) or **after** (`post-ho
 ### Step 1: Create the Audit Log Table in Snowflake
 ```sql
 CREATE TABLE T_AUDIT_LOG (
-    id           NUMBER AUTOINCREMENT START 1 INCREMENT 1,
+    id           NUMBER AUTOINCREMENT START 1 INCREMENT 1 ORDER,
     audit_type   VARCHAR,
     model_name   VARCHAR,
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
 );
 ```
+
+> **AUTOINCREMENT explained:**
+> - `START 1` — the sequence begins at 1
+> - `INCREMENT 1` — increases by 1 each row
+> - `ORDER` — guarantees that IDs are assigned in insertion order (important for audit logs where order matters)
+>
+> You never insert a value into this column — Snowflake populates it automatically.
 
 ### Step 2: Configure Hooks in `dbt_project.yml`
 ```yaml

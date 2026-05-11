@@ -9,14 +9,15 @@
 4. [Applying a Masking Policy to a Column](#4-applying-a-masking-policy-to-a-column)
 5. [Testing the Masking Policy](#5-testing-the-masking-policy)
 6. [SHOW MASKING POLICIES](#6-show-masking-policies)
-7. [Row-Level Security (Row Access Policy)](#7-row-level-security-row-access-policy)
-8. [Creating a Row Access Policy](#8-creating-a-row-access-policy)
-9. [Applying a Row Access Policy](#9-applying-a-row-access-policy)
-10. [Driving Tables for Row Access Policies](#10-driving-tables-for-row-access-policies)
-11. [Architecture Diagram](#11-architecture-diagram)
-12. [Key Commands Reference](#12-key-commands-reference)
-13. [Key Terms](#13-key-terms)
-14. [Summary](#14-summary)
+7. [POLICY_REFERENCES — Finding Which Columns Use a Policy](#7-policy_references--finding-which-columns-use-a-policy)
+8. [Row-Level Security (Row Access Policy)](#8-row-level-security-row-access-policy)
+9. [Creating a Row Access Policy](#9-creating-a-row-access-policy)
+10. [Applying a Row Access Policy](#10-applying-a-row-access-policy)
+11. [Driving Tables for Row Access Policies](#11-driving-tables-for-row-access-policies)
+12. [Architecture Diagram](#12-architecture-diagram)
+13. [Key Commands Reference](#13-key-commands-reference)
+14. [Key Terms](#14-key-terms)
+15. [Summary](#15-summary)
 
 ---
 
@@ -132,6 +133,42 @@ RETURNS VARCHAR ->
    - If column is NUMBER → return -1, 0, or another number (not `'****'`)
    - If column is VARCHAR → return `'****'` or any string
 
+### Advanced: Using a SEQUENCE to De-identify Numbers
+
+A common requirement is to **replace a real numeric ID with a fake but unique number** so that analysts can still join tables, but cannot reverse-engineer the original value. A Snowflake **sequence** generates unique integers in order, which is perfect for this.
+
+```sql
+-- Step 1: Create a sequence
+CREATE SEQUENCE seq_mask_id
+  START = 1
+  INCREMENT = 1;
+
+-- Step 2: Use the sequence in a masking policy
+CREATE MASKING POLICY mask_emp_no
+AS (val NUMBER)
+RETURNS NUMBER ->
+  CASE
+    WHEN CURRENT_ROLE() = 'ACCOUNTADMIN'
+      THEN val                      -- Admin sees the real employee number
+    ELSE seq_mask_id.NEXTVAL        -- Others get a unique but meaningless number
+  END;
+```
+
+**How it works:**
+- `seq_mask_id.NEXTVAL` generates the next value from the sequence each time the policy evaluates a row.
+- Two different users querying the same row at the same time will get **different** sequence values, so the number cannot be reverse-mapped to the real ID.
+- This is stronger than returning `-1` (which is identical for every masked row) because each masked value is unique — still useful for counting and grouping, but not traceable.
+
+```sql
+-- Verify the sequence exists
+SHOW SEQUENCES;
+
+-- Check current value
+SELECT seq_mask_id.NEXTVAL;
+```
+
+> **When to use this:** Use SEQUENCE-based masking when the column is an identifier (employee number, customer ID, account number) that analysts need for joins but should not see in plain form. Use a static value like `-1` or `'****'` when the column's value itself is sensitive and no downstream join is needed.
+
 ---
 
 ## 4. Applying a Masking Policy to a Column
@@ -187,7 +224,55 @@ SHOW MASKING POLICIES;
 
 ---
 
-## 7. Row-Level Security (Row Access Policy)
+## 7. POLICY_REFERENCES — Finding Which Columns Use a Policy
+
+Once you have masking policies applied to multiple columns, you need a way to **audit dependencies** — which tables and columns are currently using a given policy. This is critical before you can drop or modify a policy.
+
+```sql
+-- Find all columns that reference a specific masking policy
+SELECT *
+FROM information_schema.policy_references
+WHERE policy_name = 'MASK_ACCOUNT_BALANCE';
+```
+
+**Key columns in the output:**
+
+| Column | Description |
+|--------|-------------|
+| `POLICY_NAME` | Name of the masking policy |
+| `REF_ENTITY_NAME` | Table that has the policy applied |
+| `REF_COLUMN_NAME` | Column that has the policy applied |
+| `POLICY_STATUS` | `Active` or `Inactive` |
+
+### Example: Drop a Policy Safely
+
+You **cannot drop** a masking policy while it is attached to any column — Snowflake raises an error. The correct workflow is:
+
+```sql
+-- 1. Find all dependencies
+SELECT ref_entity_name AS table_name, ref_column_name AS column_name
+FROM information_schema.policy_references
+WHERE policy_name = 'MASK_ACCOUNT_BALANCE';
+
+-- 2. UNSET the policy from each column listed above
+ALTER TABLE customer
+MODIFY COLUMN c_acctbal
+UNSET MASKING POLICY;
+
+-- 3. Confirm no dependencies remain
+SELECT * FROM information_schema.policy_references
+WHERE policy_name = 'MASK_ACCOUNT_BALANCE';
+-- Should return 0 rows
+
+-- 4. Now drop the policy
+DROP MASKING POLICY mask_account_balance;
+```
+
+> **See Lecture 22** for a full worked example of this cleanup workflow including `TABLE_STORAGE_METRICS` and Time Travel.
+
+---
+
+## 8. Row-Level Security (Row Access Policy)
 
 ### Use Case
 
@@ -204,7 +289,7 @@ A customer table contains customers from multiple countries. An India role shoul
 
 ---
 
-## 8. Creating a Row Access Policy
+## 9. Creating a Row Access Policy
 
 ### Using a Driving Table (Recommended)
 
@@ -250,7 +335,7 @@ RETURNS BOOLEAN ->
 
 ---
 
-## 9. Applying a Row Access Policy
+## 10. Applying a Row Access Policy
 
 ```sql
 ALTER TABLE table_name
@@ -276,7 +361,7 @@ DROP ROW ACCESS POLICY rac_nation;
 
 ---
 
-## 10. Driving Tables for Row Access Policies
+## 11. Driving Tables for Row Access Policies
 
 ### Why Use a Driving Table?
 
@@ -312,7 +397,7 @@ SHOW ROW ACCESS POLICIES;
 
 ---
 
-## 11. Architecture Diagram
+## 12. Architecture Diagram
 
 ```mermaid
 graph TB
@@ -344,7 +429,7 @@ graph TB
 
 ---
 
-## 12. Key Commands Reference
+## 13. Key Commands Reference
 
 ### Masking Policies
 
@@ -365,6 +450,17 @@ AS (val NUMBER) RETURNS NUMBER ->
     ELSE -1
   END;
 
+-- Create a sequence for de-identification
+CREATE SEQUENCE seq_mask_id START = 1 INCREMENT = 1;
+
+-- Create masking policy using a sequence (unique number per row)
+CREATE MASKING POLICY mask_id
+AS (val NUMBER) RETURNS NUMBER ->
+  CASE
+    WHEN CURRENT_ROLE() = 'ACCOUNTADMIN' THEN val
+    ELSE seq_mask_id.NEXTVAL
+  END;
+
 -- Apply masking policy to a column
 ALTER TABLE table_name
 MODIFY COLUMN column_name
@@ -380,6 +476,11 @@ DROP MASKING POLICY mask_name;
 
 -- View masking policies
 SHOW MASKING POLICIES;
+
+-- Find all columns using a specific masking policy
+SELECT ref_entity_name AS table_name, ref_column_name AS column_name
+FROM information_schema.policy_references
+WHERE policy_name = 'MASK_NAME';
 ```
 
 ### Row Access Policies
@@ -432,7 +533,7 @@ GRANT SELECT ON TABLE table_name TO ROLE analyst_role;
 
 ---
 
-## 13. Key Terms
+## 14. Key Terms
 
 | Term | Definition |
 |------|------------|
@@ -446,10 +547,14 @@ GRANT SELECT ON TABLE table_name TO ROLE analyst_role;
 | **UNSET MASKING POLICY** | Removes masking policy from a column |
 | **ADD ROW ACCESS POLICY** | Applies a row access policy to a table column |
 | **DROP ROW ACCESS POLICY** | Removes a row access policy from a table |
+| **SEQUENCE** | Snowflake object that generates unique sequential integers; used in masking policies to produce unique de-identified values per row |
+| **NEXTVAL** | Advances the sequence and returns the next value (`seq_name.NEXTVAL`) |
+| **POLICY_REFERENCES** | Information schema view showing which tables/columns are using a given policy |
+| **De-identification** | Replacing a real value (like an ID) with a meaningless but unique substitute |
 
 ---
 
-## 14. Summary
+## 15. Summary
 
 - **Masking policies** control **column visibility** — the row is visible but the column value may be masked.
 - **Row access policies** control **row visibility** — entire rows are hidden if the policy returns FALSE.
@@ -460,3 +565,5 @@ GRANT SELECT ON TABLE table_name TO ROLE analyst_role;
 - To add a new region's access, simply insert a row in the driving table. No policy modification needed.
 - To **drop** a masking policy, you must first **UNSET** it from all columns that reference it.
 - Use `SHOW MASKING POLICIES` and `SHOW ROW ACCESS POLICIES` to view all security policies.
+- A **SEQUENCE** can be used inside a masking policy to return a unique de-identified number per row (instead of a static placeholder like `-1`). This is useful when analysts need to join on an ID without seeing the real value.
+- `INFORMATION_SCHEMA.POLICY_REFERENCES` shows all table/column dependencies for a given policy — query this before unsetting or dropping a policy.

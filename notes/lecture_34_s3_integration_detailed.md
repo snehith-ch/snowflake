@@ -231,7 +231,89 @@ Snowflake is **HIPAA (Health Insurance Portability and Accountability Act) compl
 
 ---
 
-## 8. External Tables
+## 8. Data Unloading — Exporting Data FROM Snowflake TO S3
+
+Data unloading is the reverse of data loading: you push data from a Snowflake table or query result INTO a stage (and from there to S3).
+
+### Why Unload?
+- Export processed/transformed data back to S3 for downstream systems
+- Share data with external teams without giving them Snowflake access
+- Archive older data to cheaper S3 storage
+- Feed data to ML pipelines or BI tools that consume files directly
+
+### Basic Syntax
+```sql
+COPY INTO @<stage_name>/<optional_path>
+FROM <table_or_query>
+FILE_FORMAT = (FORMAT_NAME = '<file_format_name>')
+[SINGLE = TRUE | FALSE]
+[MAX_FILE_SIZE = <bytes>];
+```
+
+### Example 1: Unload an Entire Table to CSV
+```sql
+-- Unload the emp table to S3 CSV stage
+COPY INTO @S3_CSV_STAGE
+FROM emp
+FILE_FORMAT = FILE_CSV_FORMAT;
+```
+Result: Snowflake creates one or more CSV files in the stage. File names are auto-generated (e.g., `data_0_0_0.csv.gz`).
+
+### Example 2: Unload a Query Result (Filtered Data)
+```sql
+-- Unload only specific rows from a JSON table
+COPY INTO @S3_JSON_STAGE
+FROM (SELECT c1 FROM T_SSD WHERE file_name = 'car.json')
+FILE_FORMAT = JSON_FORMAT;
+```
+You can unload any SELECT statement, not just full tables.
+
+### Example 3: Unload to a Single File
+```sql
+-- SINGLE=TRUE forces all output into one file
+-- Maximum file size with SINGLE=TRUE is 5 GB
+COPY INTO @S3_CSV_STAGE
+FROM (SELECT * FROM T_CUSTOMER LIMIT 100)
+FILE_FORMAT = FILE_CSV_FORMAT
+SINGLE = TRUE;
+```
+
+> **File size recommendations:**
+> - Minimum: 250 MB per file (smaller files waste overhead)
+> - Maximum: 5 GB per file (with `SINGLE=TRUE`)
+> - Default: Snowflake automatically splits into multiple files for large tables
+
+### Example 4: Unload to a Subfolder Path
+```sql
+-- Unload to a specific prefix/subfolder in the stage
+COPY INTO @S3_CSV_STAGE/exports/2025/05/
+FROM emp
+FILE_FORMAT = FILE_CSV_FORMAT;
+```
+
+### Unloading vs Loading Summary
+
+| Direction | Command | Source → Target |
+|---|---|---|
+| Loading (ingest) | `COPY INTO <table>` | Stage → Snowflake table |
+| Unloading (export) | `COPY INTO @<stage>` | Snowflake table/query → Stage |
+
+### Unloading Formats
+All file formats supported for loading also work for unloading:
+```sql
+-- CSV unload
+COPY INTO @S3_CSV_STAGE FROM emp FILE_FORMAT = (TYPE = CSV);
+
+-- JSON unload
+COPY INTO @S3_JSON_STAGE FROM emp FILE_FORMAT = (TYPE = JSON);
+
+-- Parquet unload
+COPY INTO @S3_STAGE FROM emp FILE_FORMAT = (TYPE = PARQUET);
+```
+
+---
+
+## 9. External Tables
 
 An **External Table** reads data from an external stage as if it were a native Snowflake table. The data is not stored in Snowflake.
 
@@ -279,7 +361,7 @@ SELECT * EXCLUDE VALUE FROM EXT_EMP_JSON;
 
 ---
 
-## 9. Insert-Only Streams on External Tables
+## 10. Insert-Only Streams on External Tables
 
 Standard streams cannot be created on external tables. Only **insert-only streams** can.
 
@@ -296,7 +378,7 @@ CREATE STREAM INSERT_ONLY_STREAM
 
 ---
 
-## 10. Complete Integration Setup Checklist
+## 11. Complete Integration Setup Checklist
 
 ```
 [ ] Create S3 bucket and folder
@@ -313,7 +395,7 @@ CREATE STREAM INSERT_ONLY_STREAM
 
 ---
 
-## 11. Key Commands
+## 12. Key Commands
 
 | Command | Description |
 |---|---|
@@ -326,6 +408,9 @@ CREATE STREAM INSERT_ONLY_STREAM
 | `CREATE EXTERNAL TABLE ... LOCATION = @stage` | Create external table |
 | `DESCRIBE STAGE <name>` | View stage properties |
 | `SELECT * EXCLUDE value FROM ext_table` | Query external table excluding metadata column |
+| `COPY INTO @stage FROM table` | Unload table to stage (export) |
+| `COPY INTO @stage FROM (SELECT ...) SINGLE=TRUE` | Unload query result to single file |
+| `ALTER EXTERNAL TABLE t REFRESH` | Detect new files added to S3 |
 
 ---
 
@@ -338,3 +423,5 @@ CREATE STREAM INSERT_ONLY_STREAM
 - Snowflake is HIPAA compliant — credentials-based stages violate HIPAA by exposing AWS keys in `DESCRIBE STAGE` output.
 - **External tables** read data directly from S3/stage files without storing data in Snowflake — ideal for infrequently changing reference data.
 - Only **insert-only streams** can be created on external tables (not standard streams).
+- **Data unloading** uses `COPY INTO @stage FROM table` — the reverse of loading. Use `SINGLE=TRUE` for one output file (max 5 GB). Recommended file size: 250 MB–5 GB per file.
+- Use `ALTER EXTERNAL TABLE t REFRESH` to force Snowflake to detect newly added files in the S3 location.

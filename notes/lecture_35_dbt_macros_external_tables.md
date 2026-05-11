@@ -298,6 +298,22 @@ CREATE EXTERNAL TABLE EXT_EMP (
     FILE_FORMAT = CSV_FORMAT;
 ```
 
+### Refreshing an External Table
+
+When new files are added to the S3 stage, Snowflake does not automatically detect them unless `AUTO_REFRESH = TRUE` is configured. For manual control:
+
+```sql
+-- Tell Snowflake to scan the stage for new/removed files
+ALTER EXTERNAL TABLE EXT_EMP REFRESH;
+```
+
+After the refresh, new files are visible in `SELECT * FROM EXT_EMP` and in the insert-only stream.
+
+You can also check what files are currently registered:
+```sql
+SELECT * FROM EXT_EMP$FILES;
+```
+
 ### Insert-Only Stream on External Table
 Standard streams track INSERT/UPDATE/DELETE. External tables only have inserts (files are added). Therefore, only **insert-only streams** work on external tables.
 
@@ -317,6 +333,16 @@ Consuming the stream:
 SELECT * FROM INSERT_STREAM;
 -- Shows new rows added since last stream consumption
 ```
+
+### External Table Limitations Summary
+
+| Limitation | Detail |
+|---|---|
+| No standard stream | Only `INSERT_ONLY = TRUE` streams work |
+| No DML | Cannot INSERT/UPDATE/DELETE into external table |
+| Read-only | Data lives in S3, not in Snowflake |
+| Manual refresh needed | Use `ALTER EXTERNAL TABLE t REFRESH` unless `AUTO_REFRESH=TRUE` |
+| Performance | Slower than native tables (reads from S3 every query) |
 
 ---
 
@@ -358,11 +384,39 @@ my_dbt_project/
 
 ---
 
-## 12. Key Commands
+## 12. Selective dbt Run Patterns
+
+### Run a Single Model
+```bash
+dbt run --select customer_orders_info
+```
+
+### Run a Model and All Its Downstream Dependents
+The `+` suffix runs the model AND every model that references it via `ref()`:
+```bash
+dbt run --select customer_orders_info+
+```
+
+### Run Only Models Changed Since the Last Run
+```bash
+dbt run --select state:modified
+```
+DBT compares the current state (SQL files) against the previous run's artifacts to find what changed. Only executes modified models — saves time in large projects.
+
+### Run a Model and All Upstream Models It Depends On
+```bash
+dbt run --select +new_marketing_segment
+```
+
+---
+
+## 13. Key Commands
 
 | Command | Description |
 |---|---|
 | `dbt run --select model_name` | Run a specific model |
+| `dbt run --select model_name+` | Run model and all downstream dependents |
+| `dbt run --select state:modified` | Run only models changed since last run |
 | `dbt run` | Run all models |
 | `{{ macro_name(args) }}` | Call a macro inside a model |
 | `{% macro name(params) %} ... {% endmacro %}` | Define a macro |
@@ -370,6 +424,7 @@ my_dbt_project/
 | `{% if not loop.last %}, {% endif %}` | Conditional comma in loop |
 | `SPLIT_PART(str, delim, pos)` | Split a string by delimiter |
 | `SELECT * EXCLUDE col FROM table` | Select all columns except specified |
+| `ALTER EXTERNAL TABLE t REFRESH` | Detect new files added to S3 stage |
 
 ---
 
@@ -383,5 +438,8 @@ my_dbt_project/
 - DBT's `ref()` and `config()` are themselves macros provided by DBT Core.
 - Snowflake's `SPLIT_PART(string, delimiter, position)` extracts a part of a string — useful for name parsing, email splitting, date components.
 - External tables read from S3 stages without storing data in Snowflake — ideal for infrequently changing reference data.
-- Only **insert-only streams** (`INSERT_ONLY = TRUE`) can be created on external tables.
+- Only **insert-only streams** (`INSERT_ONLY = TRUE`) can be created on external tables (standard streams are not supported).
+- Use `ALTER EXTERNAL TABLE t REFRESH` to force Snowflake to detect new files added to the S3 stage.
 - Use `SELECT * EXCLUDE column_name FROM table` to omit specific columns without listing all others.
+- `dbt run --select model_name+` runs the model AND all downstream models that depend on it.
+- `dbt run --select state:modified` runs only models whose SQL has changed since the last run — efficient for large projects.
